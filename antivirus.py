@@ -2,19 +2,28 @@ import sys
 import os
 import hashlib
 
-VirusDB = [
-    '68:44d88612fea8a8f36de82e1278abb02f:EICAR Test',
-    '64:253a394610d705549fc580934da4f114:Dummy Test'
-]
-
+VirusDB = []    # 악성코드 패턴은 모두 virus.db에 존재재
 vdb = []    # 가공된 악성코드 DB가 저장됨
 vsize = []  # 악성코드의 파일 크기만 저장됨
+
+# virus.db 파일에서 악성코드 패턴 읽기
+def LoadVirusDB():
+    fp = open('virus.db', 'rb')
+
+    while True:
+        line = fp.readline()
+        if not line : break
+
+        line = line.strip()
+        VirusDB.append(line)
+
+    fp.close()
 
 # VirusDB를 가공하여 vdb에 저장
 def MakeVirusDB():
     for pattern in VirusDB:
         t = []
-        v = pattern.split(':')
+        v = pattern.split(b':')
         t.append(v[1])
         t.append(v[2])
         vdb.append(t)
@@ -26,16 +35,17 @@ def MakeVirusDB():
 # 악성코드 검사
 def SearchVDB(fmd5) :
     for t in vdb : 
-        if t[0] == fmd5 :
+        if t[0] == bytes(fmd5, 'utf-8') :
             return True, t[1]
 
     return False, ''
 
 if __name__ == '__main__':
-    MakeVirusDB()   
+    LoadVirusDB()           # 악성코드 패턴을 파일에서 읽어옴
+    MakeVirusDB()           # 악성코드 DB를 가공공
 
     if len(sys.argv) != 2 :
-        print('Usage : 5_checkDB.py [file]')
+        print('Usage : antivirus.py [file]')
         exit(0)
     
     fname = sys.argv[1]
@@ -52,6 +62,7 @@ if __name__ == '__main__':
 
         ret, vname = SearchVDB(fmd5)
         if ret == True:
+            vname = str(vname, 'utf-8')
             print('%s : %s' % (fname, vname))
             os.remove(fname)
 
