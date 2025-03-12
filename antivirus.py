@@ -1,14 +1,51 @@
 import sys
 import os
 import hashlib
+import zlib
+import io
 
-VirusDB = []    # 악성코드 패턴은 모두 virus.db에 존재재
+VirusDB = []    # 악성코드 패턴은 모두 virus.db에 존재
 vdb = []    # 가공된 악성코드 DB가 저장됨
 vsize = []  # 악성코드의 파일 크기만 저장됨
 
-# virus.db 파일에서 악성코드 패턴 읽기
+# KMD 파일을 복호화
+def DecodeKMD(fname):
+    try:
+        fp = open(fname, 'rb')
+        buf = fp.read()
+        fp.close()
+
+        buf2 = buf[:-32]
+        fmd5 = buf[-32:]
+
+        f = buf2
+        for i in range(3):
+            md5 = hashlib.md5()
+            md5.update(f)
+            f = md5.hexdigest()
+            f = bytes(f, 'utf-8')
+
+        if f != fmd5:
+            raise SystemError
+        
+        buf3 = b''
+        for c in buf2[4:] : 
+            buf3 += (c^0xFF).to_bytes(1, byteorder="little")
+
+        buf4 = zlib.decompress(buf3)
+        return buf4
+    
+    except Exception as e:
+        print(f"DecodeKMD Error: {e}")
+        pass
+
+    return None
+
+# virus.kmd 파일에서 악성코드 패턴 읽기
 def LoadVirusDB():
-    fp = open('virus.db', 'rb')
+    buf = DecodeKMD('virus.kmd')
+    buf = str(buf, 'utf-8')
+    fp = io.StringIO(buf)
 
     while True:
         line = fp.readline()
@@ -23,7 +60,7 @@ def LoadVirusDB():
 def MakeVirusDB():
     for pattern in VirusDB:
         t = []
-        v = pattern.split(b':')
+        v = pattern.split(':')
         t.append(v[1])
         t.append(v[2])
         vdb.append(t)
@@ -35,7 +72,7 @@ def MakeVirusDB():
 # 악성코드 검사
 def SearchVDB(fmd5) :
     for t in vdb : 
-        if t[0] == bytes(fmd5, 'utf-8') :
+        if t[0] == fmd5 :
             return True, t[1]
 
     return False, ''
@@ -62,7 +99,6 @@ if __name__ == '__main__':
 
         ret, vname = SearchVDB(fmd5)
         if ret == True:
-            vname = str(vname, 'utf-8')
             print('%s : %s' % (fname, vname))
             os.remove(fname)
 
