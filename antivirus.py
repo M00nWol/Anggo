@@ -3,6 +3,7 @@ import os
 import hashlib
 import zlib
 import io
+import scanmod
 
 VirusDB = []    # 악성코드 패턴은 모두 virus.db에 존재
 vdb = []    # 가공된 악성코드 DB가 저장됨
@@ -69,14 +70,6 @@ def MakeVirusDB():
         if vsize.count(size) == 0 :
             vsize.append(size)
 
-# 악성코드 검사
-def SearchVDB(fmd5) :
-    for t in vdb : 
-        if t[0] == fmd5 :
-            return True, t[1]
-
-    return False, ''
-
 if __name__ == '__main__':
     LoadVirusDB()           # 악성코드 패턴을 파일에서 읽어옴
     MakeVirusDB()           # 악성코드 DB를 가공공
@@ -87,22 +80,10 @@ if __name__ == '__main__':
     
     fname = sys.argv[1]
 
-    size = os.path.getsize(fname)
-    if vsize.count(size):
-        fp = open(fname, 'rb')
-        buf = fp.read()
-        fp.close()
+    ret, vname = scanmod.ScanMD5(vdb, vsize, fname)
+    if ret == True:
+        print('%s : %s' % (fname, vname))
+        os.remove(fname)
 
-        m = hashlib.md5()
-        m.update(buf)
-        fmd5 = m.hexdigest()
-
-        ret, vname = SearchVDB(fmd5)
-        if ret == True:
-            print('%s : %s' % (fname, vname))
-            os.remove(fname)
-
-        else : 
-            print('%s : ok' % (fname))
-    else:
+    else : 
         print('%s : ok' % (fname))
