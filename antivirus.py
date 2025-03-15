@@ -4,10 +4,12 @@ import hashlib
 import zlib
 import io
 import scanmod
+import curemod
 
 VirusDB = []    # 악성코드 패턴은 모두 virus.db에 존재
 vdb = []    # 가공된 악성코드 DB가 저장됨
 vsize = []  # 악성코드의 파일 크기만 저장됨
+sdb = [] # 가공된 악성코드 DB가 저장됨 (특정 위치 검색법용용)
 
 # KMD 파일을 복호화
 def DecodeKMD(fname):
@@ -62,13 +64,24 @@ def MakeVirusDB():
     for pattern in VirusDB:
         t = []
         v = pattern.split(':')
-        t.append(v[1])
-        t.append(v[2])
-        vdb.append(t)
 
-        size = int(v[0])    # 악성코드 파일 크기
-        if vsize.count(size) == 0 :
-            vsize.append(size)
+        scan_func = v[0]
+        cure_func = v[1]
+
+        if scan_func == 'ScanMD5':
+            t.append(v[3])
+            t.append(v[4])
+            vdb.append(t)
+
+            size = int(v[2])    # 악성코드 파일 크기
+            if vsize.count(size) == 0 :
+                vsize.append(size)
+
+        elif scan_func == 'ScanStr':
+            t.append(int(v[2]))
+            t.append(v[3])
+            t.append(v[4])
+            sdb.append(t)
 
 if __name__ == '__main__':
     LoadVirusDB()           # 악성코드 패턴을 파일에서 읽어옴
@@ -80,10 +93,10 @@ if __name__ == '__main__':
     
     fname = sys.argv[1]
 
-    ret, vname = scanmod.ScanMD5(vdb, vsize, fname)
+    ret, vname = scanmod.ScanVirus(vdb, vsize, sdb, fname)
     if ret == True:
         print('%s : %s' % (fname, vname))
-        os.remove(fname)
+        curemod.CureDelete(fname)
 
     else : 
         print('%s : ok' % (fname))
