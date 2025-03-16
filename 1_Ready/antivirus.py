@@ -3,6 +3,7 @@ import os
 import hashlib
 import zlib
 import io
+import pkgutil
 import scanmod
 import curemod
 
@@ -89,11 +90,21 @@ if __name__ == '__main__':
 
     if len(sys.argv) != 2 :
         print('Usage : antivirus.py [file]')
-        exit(0)
+        sys.exit(0)
     
     fname = sys.argv[1]
 
-    ret, vname = scanmod.ScanVirus(vdb, vsize, sdb, fname)
+    try:
+        m = 'scanmod'                       # 동적 로딩할 모듈의 이름
+        loader = pkgutil.find_loader(m)     # 현재 폴더에서 모듈을 찾음
+        module = loader.load_module(m)      # 찾은 모듈을 로딩함
+        # 진단함수 호출 명령어 구성 작업
+        cmd = 'ret, vname = module.ScanVirus(vdb, vsize, sdb, fname)'
+        exec(cmd)
+    except ImportError:
+        ret, vname = scanmod.ScanVirus(vdb, vsize, sdb, fname)
+        
+        
     if ret == True:
         print('%s : %s' % (fname, vname))
         curemod.CureDelete(fname)
