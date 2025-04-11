@@ -1,7 +1,12 @@
 import k2kmdfile
+import dummy
 
-# 특정 파일(readme.txt)를 kmd 파일로 만든다. 
-ret = k2kmdfile.make('readme.txt')
-if ret:
-    k = k2kmdfile.KMD('readme.kmd')
-    print(k.body.decode('utf-8'))
+k = k2kmdfile.KMD('dummy.kmd')
+
+module = k2kmdfile.load('dummy', k.body)
+
+kav2 = dummy.KavMain()
+kav2.init('.')
+print(kav2.listvirus())
+kav2.uninit()
+

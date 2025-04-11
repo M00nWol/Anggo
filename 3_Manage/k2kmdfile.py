@@ -7,7 +7,10 @@ import struct
 import zlib
 import k2rc4
 import k2timelib
-
+import marshal
+import sys
+import importlib
+import types
 
 # rsa 개인키를 이용해서 주어진 파일을 암호화하여 KMD 파일 생성
 def make(src_fname, debug=False):
@@ -104,6 +107,20 @@ def ntimes_md5(buf, ntimes):
     
     return md5hash
 
+# 주어진 모듈 이름으로 파이썬 코드를 메모리에 로딩
+def load(mod_name, buf):
+    if buf[:4] == importlib.util.MAGIC_NUMBER:
+        code = marshal.loads(buf[16:])
+        module = types.ModuleType(mod_name)
+        exec(code, module.__dict__)
+        sys.modules['dummy'] = module 
+
+        return module
+    
+    else:
+        return None
+
+
 # KMD 오류 메시지 정의
 class KMDFormatError(Exception):
     def __init__(self, value):
@@ -193,3 +210,5 @@ class KMD(KMDConstants):
     def __get_md5(self):
         e_md5 = self.__kmd_data[self.KMD_MD5_OFFSET:]
         return e_md5
+
+    
